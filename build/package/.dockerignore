@@ -1,0 +1,17 @@
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+build/
+deploy/
+
+# Temporary files
+*~
+*#
+.#*
+
+test.http
+README.md
+
+.env
+.env.*
