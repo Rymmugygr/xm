@@ -23,6 +23,11 @@ services:
     build:
       context: ./../../
       dockerfile: build/package/Dockerfile
+    environment:
+      APP_NAME: "XM-golang-exercise"
+      APP_VERSION: 1.0.0
+      LISTEN_ADDR_HTTP: ":8000"
+      PG_DSN: "postgres://user:pass@db:5432/xm"
     ports:
       - "8000:8000"
     depends_on:
@@ -41,6 +46,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
+      - ./pg.sql:/docker-entrypoint-initdb.d/init.sql
 
   broker:
     image: apache/kafka:4.3.1

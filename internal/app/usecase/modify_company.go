@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"uuid"
 
 	"github.com/Rymmugygr/xm/internal/app/entity"
 	"github.com/Rymmugygr/xm/internal/app/repository"
@@ -13,12 +14,12 @@ type ModifyCompanyUseCase interface {
 
 type (
 	ModifyCompanyInput struct {
-		ID                entity.CompanyId
-		Name              string
-		Description       string
-		AmountOfEmployees int
-		Registered        bool
-		Type              entity.CompanyType
+		ID                uuid.UUID
+		Name              *string
+		Description       *string
+		AmountOfEmployees *int
+		Registered        *bool
+		Type              *string
 	}
 
 	ModifyCompanyOutput struct {
@@ -37,21 +38,23 @@ func NewModifyCompanyUseCaseImpl(repository repository.CompanyRepository) Modify
 }
 
 func (uc ModifyCompanyUseCaseImpl) Execute(ctx context.Context, input ModifyCompanyInput) (ModifyCompanyOutput, error) {
-	company := entity.Company{
-		ID:                input.ID,
+	company := entity.PartialCompany{
+		ID:                entity.CompanyId(input.ID),
 		Name:              input.Name,
 		Description:       input.Description,
 		AmountOfEmployees: input.AmountOfEmployees,
 		Registered:        input.Registered,
-		Type:              input.Type,
+	}
+	if input.Type != nil {
+		company.Type = new(entity.CompanyTypeFromString(*input.Type))
 	}
 
-	err := uc.repository.Update(ctx, &company)
+	updated, err := uc.repository.Update(ctx, &company)
 	if err != nil {
 		return ModifyCompanyOutput{}, err
 	}
 
 	return ModifyCompanyOutput{
-		Company: &company,
+		Company: updated,
 	}, nil
 }

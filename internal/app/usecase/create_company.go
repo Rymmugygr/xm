@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/Rymmugygr/xm/internal/app/entity"
@@ -18,7 +19,7 @@ type (
 		Description       string
 		AmountOfEmployees int
 		Registered        bool
-		Type              entity.CompanyType
+		Type              string
 	}
 
 	CreateCompanyOutput struct {
@@ -42,7 +43,7 @@ func (uc CreateCompanyUseCaseImpl) Execute(ctx context.Context, input CreateComp
 		strings.TrimSpace(input.Description),
 		input.AmountOfEmployees,
 		input.Registered,
-		input.Type,
+		entity.CompanyTypeFromString(input.Type),
 	)
 	if err != nil {
 		return CreateCompanyOutput{}, err
@@ -50,6 +51,9 @@ func (uc CreateCompanyUseCaseImpl) Execute(ctx context.Context, input CreateComp
 
 	err = uc.repository.Insert(ctx, company)
 	if err != nil {
+		if errors.Is(err, repository.ErrConflict) {
+			return CreateCompanyOutput{}, err
+		}
 		return CreateCompanyOutput{}, err
 	}
 

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"uuid"
 
 	"github.com/Rymmugygr/xm/internal/app/entity"
 	"github.com/Rymmugygr/xm/internal/app/repository"
@@ -13,7 +14,7 @@ type FindOneCompanyUseCase interface {
 
 type (
 	FindOneCompanyInput struct {
-		ID entity.CompanyId
+		ID uuid.UUID
 	}
 
 	FindOneCompanyOutput struct {
@@ -34,7 +35,7 @@ func NewFindOneCompanyUseCaseImpl(repository repository.CompanyRepository) FindO
 func (uc FindOneCompanyUseCaseImpl) Execute(ctx context.Context, input FindOneCompanyInput) (FindOneCompanyOutput, error) {
 	var company *entity.Company
 
-	company, err := uc.repository.FindByID(ctx, input.ID)
+	company, err := uc.repository.FindByID(ctx, entity.CompanyId(input.ID))
 	if err != nil {
 		return FindOneCompanyOutput{}, err
 	}

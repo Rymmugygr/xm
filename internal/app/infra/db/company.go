@@ -1,14 +1,15 @@
-package postgres
+package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 	"uuid"
 
 	"github.com/Rymmugygr/xm/internal/app/entity"
+	"github.com/Rymmugygr/xm/internal/app/repository"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type CompanyRepository struct {
@@ -55,9 +56,9 @@ func companyTypeToEntity(companyType string) entity.CompanyType {
 	return entity.CompanyTypeWrong
 }
 
-func NewCompanyRepository(db *gorm.DB) *CompanyRepository {
+func NewCompanyRepository(gorm *gorm.DB) *CompanyRepository {
 	return &CompanyRepository{
-		db: db,
+		db: gorm,
 	}
 }
 
@@ -70,6 +71,9 @@ func (c *CompanyRepository) FindByID(ctx context.Context, id entity.CompanyId) (
 		Error
 
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, repository.ErrNotFound
+		}
 		return nil, fmt.Errorf("company repository (postgres): could not find Company: %w", err)
 	}
 
@@ -97,40 +101,82 @@ func (c *CompanyRepository) Insert(ctx context.Context, company *entity.Company)
 		Error
 
 	if err != nil {
-		return fmt.Errorf("company repository (postgres): could not create Company: %w", err)
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return repository.ErrConflict
+		}
+		return fmt.Errorf("company repository (postgres): could not insert Company: %w", err)
 	}
+
 	return nil
 }
 
-func (c *CompanyRepository) Update(ctx context.Context, company *entity.Company) error {
-	row := Company{
-		Name:              company.Name,
-		Description:       company.Description,
-		AmountOfEmployees: company.AmountOfEmployees,
-		Registered:        company.Registered,
-		Type:              companyTypeToModel(company.Type),
-	}
+func (c *CompanyRepository) Update(ctx context.Context, partial *entity.PartialCompany) (updated *entity.Company, err error) {
+	err = c.db.Transaction(func(tx *gorm.DB) error {
+		company, err := c.FindByID(ctx, partial.ID)
+		if err != nil {
+			return err
+		}
 
-	err := c.db.WithContext(ctx).Model(&Company{}).
-		Clauses(clause.Returning{}).
-		Where("id = ? AND deleted_at IS NULL", company.ID).
-		Updates(&row).
-		Error
+		fields := map[string]any{
+			"name":        "",
+			"description": "",
+			"employees":   0,
+			"registered":  false,
+			"type":        "",
+		}
+
+		if partial.Name != nil {
+			fields["name"] = *partial.Name
+		} else {
+			fields["name"] = company.Name
+		}
+		if partial.Description != nil {
+			fields["description"] = *partial.Description
+		} else {
+			fields["description"] = company.Description
+		}
+		if partial.AmountOfEmployees != nil {
+			fields["employees"] = *partial.AmountOfEmployees
+		} else {
+			fields["employees"] = company.AmountOfEmployees
+		}
+		if partial.Registered != nil {
+			fields["registered"] = *partial.Registered
+		} else {
+			fields["registered"] = company.Registered
+		}
+		if partial.Type != nil {
+			fields["type"] = companyTypeToModel(*partial.Type)
+		} else {
+			fields["type"] = companyTypeToModel(company.Type)
+		}
+
+		fmt.Println(fields)
+		err = c.db.WithContext(ctx).Model(&Company{}).
+			Debug().
+			Where("id = ? AND deleted_at IS NULL", company.ID).
+			Updates(fields).
+			Error
+
+		updated, _ = c.FindByID(ctx, partial.ID)
+
+		return err
+	})
 
 	if err != nil {
-		return fmt.Errorf("company repository (postgres): could not update Company with ID %v: %w", company.ID, err)
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, repository.ErrConflict
+		}
+		return nil, fmt.Errorf("company repository (postgres): could not update Company with ID %v: %w", partial.ID, err)
 	}
-	return nil
+	return updated, nil
 }
 
 func (c *CompanyRepository) Delete(ctx context.Context, id entity.CompanyId) error {
-	rows := c.db.WithContext(ctx).Model(&Company{}).
+	err := c.db.WithContext(ctx).Model(&Company{}).
 		Where("id = ? AND deleted_at IS NULL", id).
 		Update("deleted_at", gorm.Expr("now()")).
-		RowsAffected
+		Error
 
-	if rows == 0 {
-		return fmt.Errorf("company repository (postgres): could not delete Company with ID %v", id)
-	}
-	return nil
+	return err
 }

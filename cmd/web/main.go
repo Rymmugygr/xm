@@ -1,16 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"io"
-	"log"
-	"net/http"
+	"github.com/Rymmugygr/xm/internal/app/app"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = io.WriteString(w, "Ok\n")
-	})
-	fmt.Println("Starting")
-	log.Fatal(http.ListenAndServe(":8000", nil))
+	app.Run()
 }

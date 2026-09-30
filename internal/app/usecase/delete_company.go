@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"uuid"
 
 	"github.com/Rymmugygr/xm/internal/app/entity"
 	"github.com/Rymmugygr/xm/internal/app/repository"
@@ -13,7 +14,7 @@ type DeleteCompanyUseCase interface {
 
 type (
 	DeleteCompanyInput struct {
-		ID entity.CompanyId
+		ID uuid.UUID
 	}
 
 	DeleteCompanyOutput struct {
@@ -32,7 +33,7 @@ func NewDeleteCompanyUseCaseImpl(repository repository.CompanyRepository) Delete
 }
 
 func (uc DeleteCompanyUseCaseImpl) Execute(ctx context.Context, input DeleteCompanyInput) (DeleteCompanyOutput, error) {
-	err := uc.repository.Delete(ctx, input.ID)
+	err := uc.repository.Delete(ctx, entity.CompanyId(input.ID))
 	if err != nil {
 		return DeleteCompanyOutput{}, err
 	}

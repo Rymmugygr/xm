@@ -31,6 +31,13 @@ const (
 	CompanyTypeSoleProprietorship
 )
 
+var mapCompanyTypes = map[CompanyType]string{
+	CompanyTypeCorporations:       "Corporations",
+	CompanyTypeNonProfit:          "Non Profit",
+	CompanyTypeCooperative:        "Cooperative",
+	CompanyTypeSoleProprietorship: "Sole Proprietorship",
+}
+
 func (t CompanyType) Validate() error {
 	switch t {
 	case CompanyTypeCorporations, CompanyTypeNonProfit, CompanyTypeCooperative, CompanyTypeSoleProprietorship:
@@ -41,20 +48,19 @@ func (t CompanyType) Validate() error {
 }
 
 func (t CompanyType) String() string {
-	var res string
-	switch t {
-	case CompanyTypeCorporations:
-		res = "Corporations"
-	case CompanyTypeNonProfit:
-		res = "Non Profit"
-	case CompanyTypeCooperative:
-		res = "Cooperative"
-	case CompanyTypeSoleProprietorship:
-		res = "Sole Proprietorship"
-	default:
-		res = "Unknown"
+	if val, ok := mapCompanyTypes[t]; ok {
+		return val
 	}
-	return res
+	return "Unknown"
+}
+
+func CompanyTypeFromString(companyType string) CompanyType {
+	for k, v := range mapCompanyTypes {
+		if v == companyType {
+			return k
+		}
+	}
+	return CompanyTypeWrong
 }
 
 type CompanyId uuid.UUID
@@ -70,6 +76,15 @@ type Company struct {
 	Registered        bool
 	Name              string
 	Description       string
+}
+
+type PartialCompany struct {
+	ID                CompanyId
+	Type              *CompanyType
+	AmountOfEmployees *int
+	Registered        *bool
+	Name              *string
+	Description       *string
 }
 
 func NewCompany(name, description string, amountOfEmployees int, registered bool, companyType CompanyType) (*Company, error) {
