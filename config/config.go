@@ -9,6 +9,7 @@ type (
 		App  App
 		Http Http
 		Db   Db
+		Jwt  Jwt
 	}
 
 	App struct {
@@ -20,6 +21,13 @@ type (
 	}
 	Db struct {
 		Dsn string
+	}
+	Jwt struct {
+		Provider         string
+		Secret           string
+		Algorithm        string
+		GetTokenUri      string
+		ValidateTokenUri string
 	}
 )
 
@@ -35,6 +43,9 @@ func NewConfig() (*Config, error) {
 		},
 		Db: Db{
 			Dsn: os.Getenv("PG_DSN"),
+		},
+		Jwt: Jwt{
+			Secret: os.Getenv("JWT_SECRET"),
 		},
 	}
 

@@ -15,6 +15,6 @@ func NewRouter(logger *logrus.Logger, app *fiber.App, cfg *config.Config, useCas
 
 	apiV1Group := app.Group("/v1")
 	{
-		v1.NewRoutes(apiV1Group, logger, useCases)
+		v1.NewRoutes(app, apiV1Group, logger, cfg, useCases)
 	}
 }

@@ -26,7 +26,7 @@ func Run() {
 		return
 	}
 
-	db, err := postgres.New(nil, cfg.Db)
+	db, err := postgres.New(logger, cfg.Db)
 	if err != nil {
 		logger.Errorf("error db: %v\n", err)
 		return
